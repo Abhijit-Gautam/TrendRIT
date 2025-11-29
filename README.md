@@ -1,2 +1,2 @@
 # TrendRIT
-- Trying to create Conflict
+- Trying to ensure conflicting change
