@@ -81,3 +81,4 @@ gcloud-key.json
 *.ckpt
 *.h5
 *.pb
+Firestone_key.json
