@@ -14,7 +14,6 @@ moviepy==1.0.3
 imageio==2.33.1
 requests==2.31.0
 google-generativeai==0.3.2
-segment-anything==1.0  # SAM3 SDK
-midas==0.1  # For depth estimation
-flask-limiter==3.5.0  # Rate limiting
-python-multipart==0.0.6  # File uploads
+transformers==4.36.0
+flask-limiter==3.5.0
+werkzeug==3.0.1
