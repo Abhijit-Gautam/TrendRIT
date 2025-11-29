@@ -5,7 +5,7 @@ import json
 class GeminiService:
     def __init__(self, api_key):
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-3-pro-preview')
     
     def fetch_trending_content(self, category='memes'):
         """

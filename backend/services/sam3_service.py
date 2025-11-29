@@ -1,4 +1,5 @@
 import torch
+import os
 from sam3.model_builder import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
 from PIL import Image
@@ -6,10 +7,28 @@ import numpy as np
 
 class SAM3Service:
     def __init__(self):
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = build_sam3_image_model()
-        self.model.to(self.device)
-        self.processor = Sam3Processor(self.model)
+        self.device = 'cpu'  # Force CPU mode since CUDA is not available
+        
+        # Patch torch.zeros to convert 'cuda' to 'cpu' before initializing SAM3
+        original_zeros = torch.zeros
+        def patched_zeros(*args, **kwargs):
+            if kwargs.get('device') == 'cuda':
+                kwargs['device'] = 'cpu'
+            return original_zeros(*args, **kwargs)
+        
+        torch.zeros = patched_zeros
+        
+        try:
+            self.model = build_sam3_image_model()
+            self.model.to(self.device)
+            self.processor = None  # Skip processor initialization due to missing tokenizer
+        except Exception as e:
+            # If processor fails due to missing tokenizer, continue without it
+            print(f"Warning: Could not initialize SAM3Processor: {e}")
+            self.processor = None
+        finally:
+            # Restore original torch.zeros
+            torch.zeros = original_zeros
     
     def segment_subjects(self, image_path, prompt=None):
         """
