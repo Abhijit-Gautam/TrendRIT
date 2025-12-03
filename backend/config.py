@@ -1,59 +1,117 @@
+"""
+Configuration for TrendRIT Backend
+Local/self-hosted environment with SQLite and ChromaDB
+"""
+
 import os
-from pymongo import MongoClient
-import google.generativeai as genai
-import cloudinary
-import cloudinary.uploader
 from dotenv import load_dotenv
-import json
 
 # Load environment variables
 load_dotenv()
 
+
 class Config:
-    # Flask
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
-    UPLOAD_FOLDER = 'uploads/'
-    OUTPUT_FOLDER = 'outputs/'
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    """Application configuration for local/self-hosted deployment"""
     
-    # MongoDB Configuration
-    MONGO_URI = os.environ.get('MONGO_URI', 'mongodb+srv://kamalkarteek1:rvZSeyVHhgOd2fbE@gbh.iliw2.mongodb.net/trendrit?retryWrites=true&w=majority')
-    MONGO_DB_NAME = 'trendrit'
+    # Flask Configuration
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+    FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
+    DEBUG = FLASK_ENV == 'development'
     
-    # Initialize MongoDB Client
-    try:
-        mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-        # Test connection
-        mongo_client.admin.command('ping')
-        db = mongo_client[MONGO_DB_NAME]
-        print("[OK] MongoDB Atlas connected successfully!")
-    except Exception as e:
-        print(f"[WARNING] Could not connect to MongoDB: {e}")
-        db = None
-        mongo_client = None
+    # File Storage Paths (Local)
+    BASE_DATA_DIR = os.environ.get('BASE_DATA_DIR', './data')
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', './data/uploads')
+    MODELS_FOLDER = os.environ.get('MODELS_FOLDER', './data/3d_models')
+    EXPORTS_FOLDER = os.environ.get('EXPORTS_FOLDER', './data/exports')
+    OUTPUT_FOLDER = MODELS_FOLDER  # Alias for backward compatibility
+    
+    # SQLite Database (via SQLAlchemy)
+    SQLITE_DB_PATH = os.environ.get('SQLITE_DB_PATH', 'sqlite:///data/meme3d.db')
+    SQLALCHEMY_DATABASE_URI = SQLITE_DB_PATH
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # ChromaDB Configuration (Local Vector Database)
+    CHROMADB_PATH = os.environ.get('CHROMADB_PATH', './data/chroma_db')
     
     # Gemini API Configuration
-    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-    if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
     
-    # Cloudinary Configuration
-    CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
-    CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
-    CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
+    # Model Configuration
+    DEPTH_MODEL_NAME = os.environ.get('DEPTH_MODEL_NAME', 'Intel/dpt-hybrid-midas')
+    SENTENCE_TRANSFORMER_MODEL = os.environ.get('SENTENCE_TRANSFORMER_MODEL', 'all-MiniLM-L6-v2')
     
-    # Configure Cloudinary
-    cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET
-    )
-    
-    # Model Paths
+    # Legacy model paths (for backward compatibility)
     SAM3_MODEL_PATH = os.environ.get('SAM3_MODEL_PATH', 'models/sam3_checkpoint.pth')
-    DEPTH_MODEL_NAME = 'Intel/dpt-hybrid-midas'  # or LiheYoung/depth-anything-large-hf
     
-    # Processing
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-    OUTPUT_FORMATS = ['gif', 'mp4', 'glb']
-    MAX_UPLOAD_SIZE_MB = int(os.environ.get('MAX_UPLOAD_SIZE_MB', 50))
+    # File Upload Configuration
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_UPLOAD_SIZE_MB', 50)) * 1024 * 1024
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    OUTPUT_FORMATS = ['gif', 'mp4', 'webm', 'glb', 'obj', 'ply']
+    
+    # Processing Configuration
+    MAX_IMAGE_DIMENSION = int(os.environ.get('MAX_IMAGE_DIMENSION', 2048))
+    DEFAULT_GIF_FRAMES = int(os.environ.get('DEFAULT_GIF_FRAMES', 36))
+    DEFAULT_GIF_DURATION = float(os.environ.get('DEFAULT_GIF_DURATION', 0.1))
+    
+    # Trending Cache Configuration
+    TRENDING_CACHE_TTL_HOURS = int(os.environ.get('TRENDING_CACHE_TTL_HOURS', 6))
+    
+    @staticmethod
+    def init_directories():
+        """Create necessary directories if they don't exist"""
+        directories = [
+            Config.UPLOAD_FOLDER,
+            Config.MODELS_FOLDER,
+            Config.EXPORTS_FOLDER,
+            Config.CHROMADB_PATH,
+            os.path.dirname(Config.SQLITE_DB_PATH.replace('sqlite:///', ''))
+        ]
+        
+        for directory in directories:
+            if directory and not directory.startswith('sqlite'):
+                os.makedirs(directory, exist_ok=True)
+        
+        print("[OK] Data directories initialized")
+    
+    @staticmethod
+    def get_upload_path(filename: str) -> str:
+        """Get full path for uploaded file"""
+        return os.path.join(Config.UPLOAD_FOLDER, filename)
+    
+    @staticmethod
+    def get_model_path(filename: str) -> str:
+        """Get full path for 3D model file"""
+        return os.path.join(Config.MODELS_FOLDER, filename)
+    
+    @staticmethod
+    def get_export_path(filename: str) -> str:
+        """Get full path for export file"""
+        return os.path.join(Config.EXPORTS_FOLDER, filename)
+
+
+class DevelopmentConfig(Config):
+    """Development-specific configuration"""
+    DEBUG = True
+    FLASK_ENV = 'development'
+
+
+class ProductionConfig(Config):
+    """Production-specific configuration"""
+    DEBUG = False
+    FLASK_ENV = 'production'
+
+
+class TestingConfig(Config):
+    """Testing-specific configuration"""
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    CHROMADB_PATH = './data/test_chroma_db'
+
+
+# Configuration mapping
+config_by_name = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig
+}

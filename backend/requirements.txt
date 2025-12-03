@@ -1,22 +1,41 @@
+# TrendRIT Backend Dependencies
+# Local/self-hosted 3D meme generation service
+
+# Flask Framework
 flask==3.0.0
 flask-cors==4.0.0
+flask-sqlalchemy==3.1.1
+werkzeug==3.0.1
+
+# Database
+chromadb==0.4.22
+sentence-transformers==2.3.1
+
+# Environment & Configuration
 python-dotenv==1.0.0
-google-cloud-firestore==2.14.0
-google-cloud-storage==2.14.0
-cloudinary==1.36.0
-opencv-python
+
+# Image Processing
+opencv-python==4.9.0
 Pillow==10.2.0
+
+# AI/ML - Deep Learning
 torch==2.2.0
 torchvision==0.17.0
 numpy==1.26.3
+timm==0.9.12
+transformers==4.36.0
+
+# 3D Processing
 open3d==0.18.0
 trimesh==4.0.10
+
+# Export & Animation
 moviepy==1.0.3
 imageio==2.33.1
+
+# HTTP & API
 requests==2.31.0
 google-generativeai==0.3.2
-transformers==4.36.0
+
+# Optional: Rate limiting
 flask-limiter==3.5.0
-werkzeug==3.0.1
-sam3
-triton-windows
